@@ -22,16 +22,19 @@ def startscreen1():
     pygame.init()
     screen=pygame.display.set_mode((screenwidth,screenheight))
     global screen
+    screen.fill(blue)
+    message_display("STAR PUSHER 1.01",(400,300))
+    start=pygame.image.load('startnow.png')
+    screen.blit(start,(300,400))
     while True:    
         for event in pygame.event.get():
             if event.type==QUIT:
                 crashed=True
                 terminate()
-        screen.fill(blue)
-        message_display("STAR PUSHER 1.01",(400,300))
-#        pygame.draw.rect(screen,green,(200,550,200,50))
-        start=pygame.image.load('startnow.png')
-        screen.blit(start,(300,400))
+            if event.type==MOUSEBUTTONDOWN:
+                (x,y)=event.pos
+                if x>300 and x<500 and y>400 and y<450:
+                    main()
         pygame.display.update()
         FPSclock.tick(15)
 def text_object(text,font):     
