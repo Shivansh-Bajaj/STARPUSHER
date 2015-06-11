@@ -87,7 +87,7 @@ def main():
     crashed = False
     level=loadlevel(file)
     
-    mapsurf=drawmap(level.level['level'])
+    mapsurf=drawmap(level[0]['level'])
     mapsurfrect=mapsurf.get_rect()
     mapsurfrect.center=(screenwidth/2,screenheight/2)
     screen.blit(mapsurf,mapsurfrect)
@@ -117,10 +117,10 @@ def loadlevel(file):
         elif line=='' and len(levels)>0:
             maxwidth=-1
             for i in range(len(levels)):
-                if len(levels)>maxwidth:
-                    maxwidth=len(levels)
+                if len(levels[i])>maxwidth:
+                    maxwidth=len(levels[i])
             for i in range(len(levels)):
-                levels+=' '*(maxwidth-len(levels[i]))
+                levels[i]+=' '*(maxwidth-len(levels[i]))
             for x in range(len(levels[0])):
                 level.append([])
             for x in range(len(levels)):
