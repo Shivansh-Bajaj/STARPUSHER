@@ -1,12 +1,3 @@
-; Star Pusher (Sokoban clone)
-; http://inventwithpython.com/blog
-; By Al Sweigart al@inventwithpython.com
-;
-; Everything after the ; is a comment and will be ignored by the game that
-; reads in this file.
-;
-; The format is described at:
-; http://sokobano.de/wiki/index.php?title=Level_format
 ;   @ - The starting position of the player.
 ;   $ - The starting position for a pushable star.
 ;   . - A goal where a star needs to be pushed.

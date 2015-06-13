@@ -1,4 +1,4 @@
-import random,copy,pygame,os,sys
+import random,copy,pygame,os,sys,time
 from pygame.locals import *
 FPS=30
 lightblue=(0,0,55)
@@ -50,9 +50,9 @@ def reset():
     pass
 def main():
     pygame.init()
-    
+    levelno=0
     screen=pygame.display.set_mode((screenwidth,screenheight))
-    i=1
+    screen.fill(blue)
     allimages = {'uncovered goal': pygame.image.load('RedSelector.png').convert_alpha(),
                   'covered goal': pygame.image.load('Selector.png').convert_alpha(),
                   'star': pygame.image.load('Star.png').convert_alpha(),
@@ -62,44 +62,149 @@ def main():
                   'outside floor': pygame.image.load('Grass_Block.png').convert_alpha(),
                   'title': pygame.image.load('star_title.png').convert_alpha(),
                   'solved': pygame.image.load('star_solved.png').convert_alpha(),
-                  'princess': pygame.image.load('princess.png').convert_alpha(),
-                  'boy': pygame.image.load('boy.png').convert_alpha(),
-                  'catgirl': pygame.image.load('catgirl.png').convert_alpha(),
-                  'horngirl': pygame.image.load('horngirl.png').convert_alpha(),
-                  'pinkgirl': pygame.image.load('pinkgirl.png').convert_alpha(),
                   'rock': pygame.image.load('Rock.png').convert_alpha(),
                   'short tree': pygame.image.load('Tree_Short.png').convert_alpha(),
                   'tall tree': pygame.image.load('Tree_Tall.png').convert_alpha(),
                   'ugly tree': pygame.image.load('Tree_Ugly.png').convert_alpha(),
-                  'obama': pygame.image.load('obama.png').convert_alpha()}
-   
+                  }
+    playerno=1
+    player=[pygame.image.load('princess.png').convert_alpha(),
+            pygame.image.load('boy.png').convert_alpha(),
+            pygame.image.load('catgirl.png').convert_alpha(),
+            pygame.image.load('horngirl.png').convert_alpha(),
+            pygame.image.load('pinkgirl.png').convert_alpha()]
+    global goal1
+    goal1=allimages['uncovered goal']
     enelement={
-            '.': allimages['uncovered goal'],
-            '@': allimages['boy'],
+            '.': goal1,
+            '@': player[playerno],
             '$': allimages['star']
             }
     mapelement={
             '#': allimages['wall'],
-            '1': allimages['outside floor']
+            'x':allimages['corner'],
+            ' ':allimages['outside floor'],
+            'i':allimages['inside floor']
             }
-    
     global enelement,allimages,mapelement
     crashed = False
+    global levelfinish
+    levelfinish=False
     level=loadlevel(file)
-    
-    mapsurf=drawmap(level[0]['level'])
-    mapsurfrect=mapsurf.get_rect()
-    mapsurfrect.center=(screenwidth/2,screenheight/2)
-    screen.blit(mapsurf,mapsurfrect)
-    
     while not crashed:
+        if levelfinished(level,levelno)==True:
+            if levelno==len(level)-1:
+                message_display('game complete',(screenwidth/2,screenheight/2))
+            else:
+                makemap(level,player,levelno,playerno)
+                levelno+=1
+                message_display('solved',(screenwidth/2,screenheight/2))
+                pygame.event.wait()
+                makemap(level,player,levelno,playerno)
         for event in pygame.event.get():
+            move=None
+            moved=False
+            makemap(level,player,levelno,playerno)
+            if event.type==KEYDOWN:
+                if event.key==K_r:
+                    reset()
+                if event.key==K_UP:
+                    move='up'
+                if event.key==K_DOWN:
+                    move='down'
+                if event.key==K_RIGHT:
+                    move='right'
+                if event.key==K_LEFT:
+                    move='left'
+                moved=makemove(move,level[levelno])
+                if event.key==K_w:
+                    playerno+=1
+                    if playerno>=len(player):
+                        playerno=0
+                if event.key==K_s:
+                    playerno-=1
+                    if playerno<0:
+                        playerno=len(player)-1
             if event.type==QUIT:
                 crashed=True
                 terminate()
-          
         pygame.display.update()
 #       clock.tick(60)
+def levelfinished(levelobj,levelno):
+    for goal in levelobj[levelno]['goals']:
+        if goal not in levelobj[levelno]['startgame']['stars']:
+            return False
+    return True
+def makemap(level,player,levelno,playerno):
+    (startx,starty)=level[levelno]['startgame']['startpos']
+    backcopy=mapcomplete(level[levelno]['level'],startx,starty)
+    mapsurf=drawmap(level[levelno],backmap,player[playerno])
+    mapsurfrect=mapsurf.get_rect()
+    mapsurfrect.center=(screenwidth/2,screenheight/2)
+    screen.blit(mapsurf,mapsurfrect)
+def makemove(move,startgame):
+    xofset=0
+    yofset=0
+    (x,y)=startgame['startgame']['startpos']
+    if move=='up':
+        xofset=0
+        yofset=-1
+    elif move=='down':
+        xofset=0
+        yofset=1
+    elif move=='left':
+        xofset=-1
+        yofset=0
+    elif move=='right':
+        xofset=1
+        yofset=0
+    elif move==None:
+        xofset=0
+        yofset=0
+    for i in range(len(startgame['startgame']['stars'])):
+        (starx,stary)=startgame['startgame']['stars'][i]
+        if (x+xofset,y+yofset)==startgame['startgame']['stars'][i]:
+            if (starx+xofset,stary+yofset) in startgame['walls']:
+                return False
+            startgame['startgame']['stars'][i]=(starx+xofset,stary+yofset)
+    if (x+xofset,y+yofset) in startgame['walls']:
+        return False
+    startgame['startgame']['startpos']=(x+xofset,y+yofset)
+    return True
+def mapcomplete(level,startx,starty):
+    levelcopy=copy.deepcopy(level)
+    for x in range(len(levelcopy)):
+        for y in range(len(levelcopy)):
+            if levelcopy[x][y] in ('$','.','@','*'):
+                levelcopy[x][y]=' '
+    insidearea(levelcopy,startx,starty)
+    for x in range(len(levelCopy)):
+        for y in range(len(levelcopy[0])):
+            if levelCopy[x][y] == '#':
+                if (isWall(levelCopy, x, y-1) and isWall(levelCopy, x+1, y)) or \
+                   (isWall(levelCopy, x+1, y) and isWall(levelCopy, x, y+1)) or \
+                   (isWall(levelCopy, x, y+1) and isWall(levelCopy, x-1, y)) or \
+                   (isWall(levelCopy, x-1, y) and isWall(levelCopy, x, y-1)):
+                    mapObjCopy[x][y] = 'x'
+    return levelcopy
+def insidearea(level,x,y):
+    if level[x][y]==' ':
+        level[x][y]=='i'
+    if x < len(level) - 1 and level[x+1][y]==' ':
+        insidearea(level,x+1,y)
+    if x < len(level) - 1 and level[x-1][y]==' ':
+        insidearea(level,x-1,y)
+    if x < len(level) - 1 and level[x][y+1]==' ':
+        insidearea(level,x,y+1)
+    if x < len(level) - 1 and level[x][y+1]==' ':
+        insidearea(level,x,y-1)
+def iswall(level,x,y):
+    if x<0 or y<0 or x>len(level)-1 or y>len(level)-1:
+        return False
+    else:
+        if level[x][y]=='#' or level[x][y]=='x':
+            return True
+    return False
 def loadlevel(file):
     levelfile=open(file,'r')
     content=levelfile.readlines() +['\r\n']
@@ -130,6 +235,7 @@ def loadlevel(file):
             originy=None
             goals=[]
             stars=[]
+            walls=[]
             for x in range(maxwidth):
                 for y in range(len(level[x])):
                     if level[x][y]=='@':
@@ -139,6 +245,8 @@ def loadlevel(file):
                         stars.append((x,y))
                     if level[x][y]=='.':
                         goals.append((x,y))
+                    if level[x][y]=='#':
+                        walls.append((x,y))
             startobj= {
                 'startpos':(originx,originy),
                 'steps':0,
@@ -146,6 +254,7 @@ def loadlevel(file):
                 }  
 
             levelobj={
+                'walls':walls,
                 'width':maxwidth,
                 'height':len(level),
                 'level':level,
@@ -159,25 +268,27 @@ def loadlevel(file):
             levelno+=1
     return mapobj
     
-def drawmap(level):
+def drawmap(levelobj,levelcopy,playerimg):
+    level=levelobj['level']
     gamesurfwidth=len(level)*blockwidth
     gamesurfheight=(len(level[0])-1)*blockbaseheight+blockheight
     gamesurf=pygame.Surface((gamesurfwidth,gamesurfheight))
     gamesurf.fill(blue)
     for x in range(len(level)):
-        for y in range(len(level[x])):
+        for y in range(len(levelcopy[x])):
             rect=pygame.Rect((x * blockwidth, y * blockbaseheight, blockwidth, blockheight))
-            if level[x][y] in mapelement:
+            if levelcopy[x][y] in mapelement:
                 block=mapelement[level[x][y]]
-            else:
-                block=allimages['inside floor']
             gamesurf.blit(block,rect)
-            if level[x][y]=='.':
-                gamesurf.blit(allimages['uncovered goal'],rect)
-            if level[x][y]=='$':
+            if (x,y) in levelobj['goals']:
+                if (x,y) in levelobj['startgame']['stars']:
+                    gamesurf.blit(allimages['covered goal'],rect)
+                else:
+                    gamesurf.blit(allimages['uncovered goal'],rect)
+            if (x,y) in levelobj['startgame']['stars']:
                 gamesurf.blit(allimages['star'],rect)
-            if level[x][y]=='@':
-                gamesurf.blit(allimages['boy'],rect)
+            if (x,y)==levelobj['startgame']['startpos']:
+                gamesurf.blit(playerimg,rect)
     return gamesurf
 startscreen1()
 #if __name__=='__main__':
