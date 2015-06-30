@@ -2,6 +2,7 @@ import random,copy,pygame,os,sys,time
 from pygame.locals import *
 FPS=30
 lightblue=(0,0,55)
+pink=(233,110,233)
 white=(225,225,225)
 black=(0,0,0)
 green=(0,200,0)
@@ -9,10 +10,30 @@ blue=(0,170,225)
 FPSclock=pygame.time.Clock()
 blockwidth=50
 blockheight=85
-background=pygame.image.load('untitled.jpg')
+background=pygame.image.load(os.path.join('pic','untitled.jpg'))
 blockbaseheight=40
 screenwidth,screenheight=800,600
 file='levelfile.txt'
+pygame.mixer.init()
+pygame.mixer.music.load(os.path.join('music','song.ogg'))
+intro=pygame.mixer.Sound(os.path.join('music','intro.ogg'))
+match=pygame.mixer.Sound(os.path.join('music','match.ogg'))
+end=pygame.mixer.Sound(os.path.join('music','applause.ogg'))
+def music(i):
+    if i=='play':
+        pygame.mixer.music.play(-1)
+    elif i=='stop':
+        pygame.mixer.music.stop()
+    elif i=='pause':
+        pygame.mixer.music.pause()
+    elif i=='unpause':
+        pygame.mixer.music.unpause()
+def solveddisplay():
+    music('stop')
+    message_display('SOLVED',(screenwidth/2,screenheight/2))
+    while True:
+        if pygame.event.wait():
+            break
 class player:
     def __init__(self):
         pass        
@@ -25,8 +46,7 @@ def startscreen1():
     global screen
     screen.fill(white)
     screen.blit(background,(0,0))
-    
-    start=pygame.image.load('startnow.png')
+    start=pygame.image.load(os.path.join('pic','startnow.png'))
     screen.blit(start,(300,400))
     while True:    
         for event in pygame.event.get():
@@ -51,30 +71,33 @@ def message_display(text,cenpos):
 def reset():
     pass
 def main():
+    intro.play()
+    playmusic='play'
+    music(playmusic)
     pygame.init()
     levelno=0
     screen=pygame.display.set_mode((screenwidth,screenheight))
-    screen.fill(blue)
-    allimages = {'uncovered goal': pygame.image.load('RedSelector.png').convert_alpha(),
-                  'covered goal': pygame.image.load('Selector.png').convert_alpha(),
-                  'star': pygame.image.load('Star.png').convert_alpha(),
-                  'corner': pygame.image.load('Wall_Block_Tall.png').convert_alpha(),
-                  'wall': pygame.image.load('Wood_Block_Tall.png').convert_alpha(),
-                  'inside floor': pygame.image.load('Plain_Block.png').convert_alpha(),
-                  'outside floor': pygame.image.load('Grass_Block.png').convert_alpha(),
-                  'title': pygame.image.load('star_title.png').convert_alpha(),
-                  'solved': pygame.image.load('star_solved.png').convert_alpha(),
-                  'rock': pygame.image.load('Rock.png').convert_alpha(),
-                  'short tree': pygame.image.load('Tree_Short.png').convert_alpha(),
-                  'tall tree': pygame.image.load('Tree_Tall.png').convert_alpha(),
-                  'ugly tree': pygame.image.load('Tree_Ugly.png').convert_alpha(),
+    screen.fill(green)
+    allimages = {'uncovered goal': pygame.image.load(os.path.join('pic','RedSelector.png')).convert_alpha(),
+                  'covered goal': pygame.image.load(os.path.join('pic','Selector.png')).convert_alpha(),
+                  'star': pygame.image.load(os.path.join('pic','Star.png')).convert_alpha(),
+                  'corner': pygame.image.load(os.path.join('pic','Wall_Block_Tall.png')).convert_alpha(),
+                  'wall': pygame.image.load(os.path.join('pic','Wood_Block_Tall.png')).convert_alpha(),
+                  'inside floor': pygame.image.load(os.path.join('pic','Plain_Block.png')).convert_alpha(),
+                  'outside floor': pygame.image.load(os.path.join('pic','Grass_Block.png')).convert_alpha(),
+                  'title': pygame.image.load(os.path.join('pic','star_title.png')).convert_alpha(),
+                  'solved': pygame.image.load(os.path.join('pic','star_solved.png')).convert_alpha(),
+                  'rock': pygame.image.load(os.path.join('pic','Rock.png')).convert_alpha(),
+                  'short tree': pygame.image.load(os.path.join('pic','Tree_Short.png')).convert_alpha(),
+                  'tall tree': pygame.image.load(os.path.join('pic','Tree_Tall.png')).convert_alpha(),
+                  'ugly tree': pygame.image.load(os.path.join('pic','Tree_Ugly.png')).convert_alpha(),
                   }
     playerno=1
-    player=[pygame.image.load('princess.png').convert_alpha(),
-            pygame.image.load('boy.png').convert_alpha(),
-            pygame.image.load('catgirl.png').convert_alpha(),
-            pygame.image.load('horngirl.png').convert_alpha(),
-            pygame.image.load('pinkgirl.png').convert_alpha()]
+    player=[pygame.image.load(os.path.join('pic','princess.png')).convert_alpha(),
+            pygame.image.load(os.path.join('pic','boy.png')).convert_alpha(),
+            pygame.image.load(os.path.join('pic','catgirl.png')).convert_alpha(),
+            pygame.image.load(os.path.join('pic','horngirl.png')).convert_alpha(),
+            pygame.image.load(os.path.join('pic','pinkgirl.png')).convert_alpha()]
     global goal1
     global enelement,allimages,mapelement
     goal1=allimages['uncovered goal']
@@ -100,14 +123,25 @@ def main():
             else:
                 makemap(level,player,levelno,playerno)
                 levelno+=1
-                message_display('solved',(screenwidth/2,screenheight/2))
+                music('stop')
+                end.play()
+                solveddisplay()
                 pygame.event.wait()
+                end.stop()
+                music(playmusic)
                 makemap(level,player,levelno,playerno)
         for event in pygame.event.get():
             move=None
             moved=False
             makemap(level,player,levelno,playerno)
             if event.type==KEYDOWN:
+                if event.key==K_m:
+                    if playmusic=='play' or playmusic=='unpause':
+                        music('pause')
+                        playmusic='pause'
+                    elif playmusic=='pause':
+                        playmusic='play'
+                        music('unpause')
                 if event.key==K_r:
                     reset()
                 if event.key==K_UP:
@@ -173,6 +207,8 @@ def makemove(move,startgame):
                 return False
             if (starx+xofset,stary+yofset) in startgame['startgame']['stars']:
                 return False
+            if (starx+xofset,stary+yofset) in startgame['goals']:
+                match.play()
             startgame['startgame']['stars'][i]=(starx+xofset,stary+yofset)
     if (x+xofset,y+yofset) in startgame['walls']:
         return False
@@ -281,7 +317,7 @@ def drawmap(levelobj,levelcopy,playerimg):
     gamesurfwidth=len(level)*blockwidth
     gamesurfheight=(len(level[0])-1)*blockbaseheight+blockheight
     gamesurf=pygame.Surface((gamesurfwidth,gamesurfheight))
-    gamesurf.fill(blue)
+    gamesurf.fill(green)
     for x in range(len(level)):
         for y in range(len(levelcopy[x])):
             rect=pygame.Rect((x * blockwidth, y * blockbaseheight, blockwidth, blockheight))
